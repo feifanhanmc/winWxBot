@@ -750,8 +750,10 @@ class WXBot:
                 user['name'] = 'unknown'
             user['name'] = HTMLParser.HTMLParser().unescape(user['name'])
 
-            if self.DEBUG and msg_type_id != 0:
-                print u'[MSG] %s:' % user['name']
+            #注释掉，暂时不用这么提示
+#             if self.DEBUG and msg_type_id != 0:
+#                 print '[MSG] %s:' % user['name'].encode('utf8')
+                
             content = self.extract_msg_content(msg_type_id, msg)
             message = {'msg_type_id': msg_type_id,
                        'msg_id': msg['MsgId'],
