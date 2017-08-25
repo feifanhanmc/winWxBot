@@ -537,9 +537,9 @@ class WXBot:
 
         msg_content = {}
         if msg_type_id == 0:
-            return {'type': 11, 'data': ''}
+            return {'type': 11, 'data': {'data': ''}}
         elif msg_type_id == 2:  # File Helper
-            return {'type': 0, 'data': content.replace('<br/>', '\n')}
+            return {'type': 0, 'data':{'data': content.replace('<br/>', '\n')}}
         elif msg_type_id == 3:  # 群聊
             sp = content.find('<br/>')
             uid = content[:sp]
@@ -557,14 +557,14 @@ class WXBot:
 
         msg_prefix = (msg_content['user']['name'] + ':') if 'user' in msg_content else ''
 
-        if mtype == 1:
+        if mtype == 1:  #地理位置
             if content.find('http://weixin.qq.com/cgi-bin/redirectforward?args=') != -1:
                 r = self.session.get(content)
                 r.encoding = 'gbk'
                 data = r.text
                 pos = self.search_content('title', data, 'xml')
                 msg_content['type'] = 1
-                msg_content['data'] = pos
+                msg_content['data'] = {'data': pos}
                 msg_content['detail'] = data
                 if self.DEBUG:
                     print '    %s[Location] %s ' % (msg_prefix, pos)
@@ -575,11 +575,11 @@ class WXBot:
                     str_msg_all = msg_infos[0]
                     str_msg = msg_infos[1]
                     detail = msg_infos[2]
-                    msg_content['data'] = str_msg_all
+                    msg_content['data'] = {'data': str_msg_all}
                     msg_content['detail'] = detail
                     msg_content['desc'] = str_msg
                 else:
-                    msg_content['data'] = content
+                    msg_content['data'] = {'data' :content}
                 if self.DEBUG:
                     try:
                         print '    %s[Text] %s' % (msg_prefix, msg_content['data'])
@@ -587,7 +587,7 @@ class WXBot:
                         print '    %s[Text] (illegal text).' % msg_prefix
         elif mtype == 3:
             msg_content['type'] = 3
-            msg_content['data'] = self.get_msg_img_url(msg_id)
+            msg_content['data'] = {'data': self.get_msg_img_url(msg_id)}
             #太占空间，暂时注释掉
 #             msg_content['img'] = self.session.get(msg_content['data']).content.encode('hex')
             if self.DEBUG:
@@ -595,7 +595,7 @@ class WXBot:
                 print '    %s[Image] %s' % (msg_prefix, image)
         elif mtype == 34:
             msg_content['type'] = 4
-            msg_content['data'] = self.get_voice_url(msg_id)
+            msg_content['data'] = {'data': self.get_voice_url(msg_id)}
             #太占空间，暂时注释掉
 #             msg_content['voice'] = self.session.get(msg_content['data']).content.encode('hex')
             if self.DEBUG:
@@ -603,7 +603,7 @@ class WXBot:
                 print '    %s[Voice] %s' % (msg_prefix, voice)
         elif mtype == 37:
             msg_content['type'] = 37
-            msg_content['data'] = msg['RecommendInfo']
+            msg_content['data'] = {'data': msg['RecommendInfo']}
             if self.DEBUG:
                 print '    %s[useradd] %s' % (msg_prefix,msg['RecommendInfo']['NickName'])
         elif mtype == 42:
@@ -624,7 +624,7 @@ class WXBot:
                 print '    -----------------------------'
         elif mtype == 47:
             msg_content['type'] = 6
-            msg_content['data'] = self.search_content('cdnurl', content)
+            msg_content['data'] = {'data': self.search_content('cdnurl', content)}
             if self.DEBUG:
                 print '    %s[Animation] %s' % (msg_prefix, msg_content['data'])
         elif mtype == 49:
@@ -656,32 +656,32 @@ class WXBot:
 
         elif mtype == 62:
             msg_content['type'] = 8
-            msg_content['data'] = content
+            msg_content['data'] = {'data': content}
             if self.DEBUG:
                 print '    %s[Video] Please check on mobiles' % msg_prefix
         elif mtype == 53:
             msg_content['type'] = 9
-            msg_content['data'] = content
+            msg_content['data'] = {'data': content}
             if self.DEBUG:
                 print '    %s[Video Call]' % msg_prefix
         elif mtype == 10002:
             msg_content['type'] = 10
-            msg_content['data'] = content
+            msg_content['data'] = {'data': content}
             if self.DEBUG:
                 print '    %s[Redraw]' % msg_prefix
         elif mtype == 10000:  # unknown, maybe red packet, or group invite
             msg_content['type'] = 12
-            msg_content['data'] = msg['Content']
+            msg_content['data'] = {'data': msg['Content']}
             if self.DEBUG:
                 print '    [Unknown]'
         elif mtype == 43:
             msg_content['type'] = 13
-            msg_content['data'] = self.get_video_url(msg_id)
+            msg_content['data'] = {'data': self.get_video_url(msg_id)}
             if self.DEBUG:
                 print '    %s[video] %s' % (msg_prefix, msg_content['data'])
         else:
             msg_content['type'] = 99
-            msg_content['data'] = content
+            msg_content['data'] = {'data': content}
             if self.DEBUG:
                 print '    %s[Unknown]' % msg_prefix
         return msg_content
