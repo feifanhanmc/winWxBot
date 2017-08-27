@@ -772,11 +772,15 @@ class WXBot:
         pass
 
     def proc_msg(self):
+        '''
+        根据run()的结果来决定是否开始开始proc_msg()
+        '''
         self.test_sync_check()
-        self.status = 'loginsuccess'  #WxbotManage使用
+#         self.status = 'loginsuccess'  #WxbotManage使用
         while True:
-            if self.status == 'wait4loginout':  #WxbotManage使用
-                return 
+#             if self.status == 'wait4loginout':  #WxbotManage使用
+# #                 self.status = 'loginout'
+#                 return 
             check_time = time.time()
             try:
                 [retcode, selector] = self.sync_check()
@@ -823,6 +827,7 @@ class WXBot:
             check_time = time.time() - check_time
             if check_time < 0.8:
                 time.sleep(1 - check_time)
+
 
     def apply_useradd_requests(self,RecommendInfo):
         url = self.base_uri + '/webwxverifyuser?r='+str(int(time.time()))+'&lang=zh_CN'
@@ -1182,9 +1187,12 @@ class WXBot:
         return 'unknown'
 
     def run(self):
+        '''
+        根据本函数的return的结果决定是否显式调用proc_msg()，即不在内部自动判断来确定是否调用proc_msg()
+        '''
         try:
             self.get_uuid()
-            self.gen_qr_code(os.path.join(self.temp_pwd,'wxqr.png'))
+            self.gen_qr_code(os.path.join(self.temp_pwd, self.uuid + 'wxqr.png'))
             print '[INFO] Please use WeChat to scan the QR code .'
 
             result = self.wait4login()
@@ -1210,11 +1218,16 @@ class WXBot:
             if self.get_contact():
                 print '[INFO] Get %d contacts' % len(self.contact_list)
                 print '[INFO] Start to process messages .'
-            self.proc_msg()
-            self.status = 'loginout'
+            
+            self.status = 'loginsuccess'
+            print self.my_account
+            return True
+#             self.proc_msg()
+#             self.status = 'loginout'
         except Exception,e:
             print '[ERROR] Web WeChat run failed --> %s'%(e)
             self.status = 'loginout'
+            return 
 
 
     def get_uuid(self):
@@ -1341,6 +1354,9 @@ class WXBot:
         r = self.session.post(url, data=json.dumps(params))
         r.encoding = 'utf-8'
         dic = json.loads(r.text)
+        
+        print dic
+        
         self.sync_key = dic['SyncKey']
         self.my_account = dic['User']
         self.sync_key_str = '|'.join([str(keyVal['Key']) + '_' + str(keyVal['Val'])

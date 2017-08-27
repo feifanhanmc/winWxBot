@@ -1,9 +1,11 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-from wxbot import *
 import ConfigParser
 import json
+import multiprocessing
+
+from wxbot import *
 
 
 class TulingWXBot(WXBot):
@@ -68,7 +70,7 @@ class TulingWXBot(WXBot):
         if msg['msg_type_id'] == 1 and msg['content']['type'] == 0:  # reply to self
             self.auto_switch(msg)
         elif msg['msg_type_id'] == 4 and msg['content']['type'] == 0:  # text message from contact
-            self.send_msg_by_uid(self.tuling_auto_reply(msg['user']['id'], msg['content']['data']), msg['user']['id'])
+            self.send_msg_by_uid(self.tuling_auto_reply(msg['user']['id'], msg['content']['data']['data']), msg['user']['id'])
         elif msg['msg_type_id'] == 3 and msg['content']['type'] == 0:  # group text message
             if 'detail' in msg['content']:
                 my_names = self.get_group_member_name(msg['user']['id'], self.my_account['UserName'])
@@ -95,14 +97,20 @@ class TulingWXBot(WXBot):
                         reply += u"对不起，只认字，其他杂七杂八的我都不认识，,,Ծ‸Ծ,,"
                     self.send_msg_by_uid(reply, msg['user']['id'])
 
-
-def main():
+def run_bot():
     bot = TulingWXBot()
     bot.DEBUG = True
     bot.conf['qr'] = 'png'
-
-    bot.run()
-
+    if bot.run():
+        bot.proc_msg()
+    
+        
+def main():
+    bot_num = 2
+    for i in range(bot_num):
+        print 'bot %s ...' % str(i+1)
+        p = multiprocessing.Process(target = run_bot)
+        p.start()
 
 if __name__ == '__main__':
     main()

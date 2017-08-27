@@ -30,9 +30,9 @@ class ES():
         '''
         if doc_type:
             self.doc_type = doc_type
-        print self.es.index(index=self.index_name, doc_type=self.doc_type, id=msg['msg_id'], body=json.JSONEncoder().encode(msg))
+        self.es.index(index=self.index_name, doc_type=self.doc_type, id=msg['msg_id'], body=json.JSONEncoder().encode(msg))
             
-
+    
 
 if __name__ == '__main__':
     es = ES()
