@@ -36,5 +36,6 @@ class ES():
 
 if __name__ == '__main__':
     es = ES()
+    es.create_index()
 
 

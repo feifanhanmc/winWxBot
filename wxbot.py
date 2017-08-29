@@ -69,7 +69,10 @@ class SafeSession(requests.Session):
 class WXBot:
     """WXBot功能类"""
 
-    def __init__(self):
+    def __init__(self, bot_id):
+        
+        self.bot_id = bot_id
+        
         self.DEBUG = False
         self.uuid = ''
         self.base_uri = ''
@@ -1531,3 +1534,6 @@ class WXBot:
             return dic['BaseResponse']['ErrMsg']
         except:
             return None
+
+    def test_my_send_msg(self, msg):
+        print  self.bot_id, msg
