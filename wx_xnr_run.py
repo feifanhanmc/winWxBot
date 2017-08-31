@@ -14,9 +14,9 @@ class WX_XNR_Bot(WXBot):
             #目前只处理接收群消息
             if msg['msg_type_id'] == 3:
                 print json.JSONEncoder().encode(msg)
-#             WX_XNR_ES().save_data(msg=msg)
+                WX_XNR_ES().save_data(doc_type='test_group_msg', data=msg)
 #             if msg['msg_type_id'] == 4 and msg['content']['type'] == 0:
-#                 self.send_msg_by_uid(u'hi', msg['user']['id'])
+#                 self.send_msg_by_uid(u'刘艺华是傻逼', msg['user']['id'])
 # 
 
 
@@ -24,16 +24,27 @@ def load_config():
     cf = ConfigParser.ConfigParser()
     cf.read('wx_xnr_conf.ini')
     config = {}
-    config['host'] = cf.get('wx_xnr_socket', 'host')
-    config['port'] = int(cf.get('wx_xnr_socket', 'port'))
+    config['socket_host'] = cf.get('wx_xnr_socket', 'host')
+    config['socket_port'] = int(cf.get('wx_xnr_socket', 'port'))
     config['DEBUG'] = cf.get('wx_xnr_bot', 'DEBUG')
     config['conf_qr'] = cf.get('wx_xnr_bot', 'conf_qr')
     config['bot_num'] = int(cf.get('wx_xnr_bot', 'bot_num'))
+    config['es_host'] = cf.get('wx_xnr_es', 'host')
+    config['es_index_name'] = cf.get('wx_xnr_es', 'index_name')
+    config['test_mapping'] = eval(cf.get('wx_xnr_es', 'test_mapping'))
     return config    
+
+def init_es(config):
+    es = WX_XNR_ES(host=config['es_host'], index_name=config['es_index_name'])
+    es.create_index()
+#     group_msg_mapping = {
+#         
+#     }
+#     es.put_mapping(doc_type='group_msg', mapping=group_msg_mapping)
 
 def pub_msg(Bot, config):
     server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    server.bind((config['host'], config['port']))
+    server.bind((config['socket_host'], config['socket_port']))
     server.listen(0)
     while True:
         conn, addr = server.accept()
@@ -48,10 +59,10 @@ def pub_msg(Bot, config):
             print bot.send_msg(data['to_user'], data['m'])
     conn.close()  
     
-
 def main():
     Bot = {}
     config = load_config()
+    init_es(config)
     #为每一个wxbot开启一个新进程
     for i in range(config['bot_num']):
         bot_id = 'bot_' + str(i+1)
@@ -66,5 +77,15 @@ def main():
     pub_msg(Bot, config)        
         
 if __name__ == '__main__':
-    main()
+#     main()
+    config = load_config()
+    t = config['test_mapping']
+    print type(t)
+    print t['properties']
+    
+    
+    
+    config = load_config()
+    with open('config.json', 'wb') as f:
+        f.write(json.dumps(config))
     

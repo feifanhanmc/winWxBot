@@ -1,0 +1,1 @@
+{"es_index_name": "wx_xnr", "test_mapping": {"properties": {"msg_id": {"type": "long"}, "m": {"type": "string"}}}, "conf_qr": "png", "socket_port": 6661, "DEBUG": "True", "bot_num": 1, "es_host": "hanmengcheng.com:9200", "socket_host": "127.0.0.1"}

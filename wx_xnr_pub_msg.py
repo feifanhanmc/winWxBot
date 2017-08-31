@@ -9,8 +9,8 @@ def load_config():
     cf = ConfigParser.ConfigParser()
     cf.read('wx_xnr_conf.ini')
     config = {}
-    config['host'] = cf.get('wx_xnr_socket', 'host')
-    config['port'] = int(cf.get('wx_xnr_socket', 'port'))
+    config['socket_host'] = cf.get('wx_xnr_socket', 'host')
+    config['socket_port'] = int(cf.get('wx_xnr_socket', 'port'))
     return config  
 
 def socket_client(msg):
@@ -30,6 +30,6 @@ def push_msg(from_bot_id, to_user, m):
 def main():
     global config
     config = load_config()
-    push_msg(from_bot_id='bot_1', to_user='韩梦成', m='test')
+    push_msg(from_bot_id='bot_1', to_user='刘艺华', m='傻逼')
 
 main()

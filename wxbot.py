@@ -1356,7 +1356,7 @@ class WXBot:
         r.encoding = 'utf-8'
         dic = json.loads(r.text)
         
-        print dic
+#         print dic
         
         self.sync_key = dic['SyncKey']
         self.my_account = dic['User']
