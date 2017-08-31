@@ -69,11 +69,13 @@ class SafeSession(requests.Session):
 class WXBot:
     """WXBot功能类"""
 
-    def __init__(self, bot_id):
+    def __init__(self, bot_id, conf_qr, DEBUG=False):
         
         self.bot_id = bot_id
+        #unix终端下设置conf['qr'] 为 tty
+        self.conf = {'qr': conf_qr}        
+        self.DEBUG = DEBUG
         
-        self.DEBUG = False
         self.uuid = ''
         self.base_uri = ''
         self.base_host = ''
@@ -103,9 +105,6 @@ class WXBot:
 
         self.session = SafeSession()
         self.session.headers.update({'User-Agent': 'Mozilla/5.0 (X11; Linux i686; U;) Gecko/20070322 Kazehakase/0.4.5'})
-
-        #unix终端下设置conf['qr'] 为 tty
-        self.conf = {'qr': 'png'}
 
         self.my_account = {}  # 当前账户
 
@@ -181,7 +180,7 @@ class WXBot:
             dic_list.append(dic)
 
         if self.DEBUG:
-            with open(os.path.join(self.temp_pwd,'contacts.json'), 'w') as f:
+            with open(os.path.join(self.temp_pwd,self.bot_id + 'contacts.json'), 'w') as f:
                 f.write(json.dumps(dic_list))
 
         self.member_list = []
@@ -227,19 +226,19 @@ class WXBot:
                         {'type': 'group_member', 'info': member, 'group': group}
 
         if self.DEBUG:
-            with open(os.path.join(self.temp_pwd,'contact_list.json'), 'w') as f:
+            with open(os.path.join(self.temp_pwd, self.bot_id + 'contact_list.json'), 'w') as f:
                 f.write(json.dumps(self.contact_list))
-            with open(os.path.join(self.temp_pwd,'special_list.json'), 'w') as f:
+            with open(os.path.join(self.temp_pwd,self.bot_id + 'special_list.json'), 'w') as f:
                 f.write(json.dumps(self.special_list))
-            with open(os.path.join(self.temp_pwd,'group_list.json'), 'w') as f:
+            with open(os.path.join(self.temp_pwd,self.bot_id + 'group_list.json'), 'w') as f:
                 f.write(json.dumps(self.group_list))
-            with open(os.path.join(self.temp_pwd,'public_list.json'), 'w') as f:
+            with open(os.path.join(self.temp_pwd,self.bot_id + 'public_list.json'), 'w') as f:
                 f.write(json.dumps(self.public_list))
-            with open(os.path.join(self.temp_pwd,'member_list.json'), 'w') as f:
+            with open(os.path.join(self.temp_pwd,self.bot_id + 'member_list.json'), 'w') as f:
                 f.write(json.dumps(self.member_list))
-            with open(os.path.join(self.temp_pwd,'group_users.json'), 'w') as f:
+            with open(os.path.join(self.temp_pwd,self.bot_id + 'group_users.json'), 'w') as f:
                 f.write(json.dumps(self.group_members))
-            with open(os.path.join(self.temp_pwd,'account_info.json'), 'w') as f:
+            with open(os.path.join(self.temp_pwd,self.bot_id + 'account_info.json'), 'w') as f:
                 f.write(json.dumps(self.account_info))
         return True
 
@@ -1133,7 +1132,8 @@ class WXBot:
     def get_user_id(self, name):
         if name == '':
             return None
-        name = self.to_unicode(name)
+        #也不知道原作者写这个转unicode干啥，用了就不对。不用就ok了
+        #name = self.to_unicode(name)
         for contact in self.contact_list:
             if 'RemarkName' in contact and contact['RemarkName'] == name:
                 return contact['UserName']
@@ -1150,6 +1150,7 @@ class WXBot:
                 return group['UserName']
 
         return ''
+    
 
     def send_msg(self, name, word, isfile=False):
         uid = self.get_user_id(name)
@@ -1195,7 +1196,7 @@ class WXBot:
         '''
         try:
             self.get_uuid()
-            self.gen_qr_code(os.path.join(self.temp_pwd, self.uuid + 'wxqr.png'))
+            self.gen_qr_code(os.path.join(self.temp_pwd, self.bot_id + 'wxqr.png'))
             print '[INFO] Please use WeChat to scan the QR code .'
 
             result = self.wait4login()
@@ -1223,12 +1224,9 @@ class WXBot:
                 print '[INFO] Start to process messages .'
             
             self.status = 'loginsuccess'
-            print self.my_account
             return True
-#             self.proc_msg()
-#             self.status = 'loginout'
         except Exception,e:
-            print '[ERROR] Web WeChat run failed --> %s'%(e)
+            print '[ERROR] Web WeChat runbot failed --> %s'%(e)
             self.status = 'loginout'
             return 
 

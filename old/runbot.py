@@ -1,11 +1,10 @@
 #!/usr/bin/env python
 #-*- coding: utf-8 -*-
-from multiprocessing import Pool, freeze_support, Process
-import multiprocessing
-import socket
-
-from es import ES
 from wxbot import *
+from multiprocessing import Process
+import socket
+from es import ES
+
 
 
 class MyWXBot(WXBot):
@@ -17,8 +16,6 @@ class MyWXBot(WXBot):
 #                 self.send_msg_by_uid(u'hi', msg['user']['id'])
 # 
 
-def my_proc_msg(bot):
-    bot.proc_msg()
  
 
 def pub_msg(Bot):
@@ -31,7 +28,8 @@ def pub_msg(Bot):
         data = json.loads(data)
         if data:
             bot = Bot[data['from_bot_id']]
-            msg = {}
+#             msg = {}
+#             ES().save_data(msg=msg)
             bot.send_msg(data['to_ser'], data['m'])
     conn.close()  
     
@@ -39,6 +37,7 @@ def pub_msg(Bot):
 def main():
     Bot = {}
     bot_num = 2
+    #为每一个wxbot开启一个新进程
     for i in range(bot_num):
         bot_id = 'bot' + str(i+1)
         print bot_id + '...'
@@ -50,11 +49,10 @@ def main():
          
         if bot.run():
             Bot[bot_id] = bot
-            p = Process(target=my_proc_msg, args=(bot,))
+            p = Process(target=MyWXBot.proc_msg, args=(bot,))
             p.start()
     
     pub_msg(Bot)        
         
 if __name__ == '__main__':
-#     freeze_support()
     main()
