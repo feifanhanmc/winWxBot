@@ -1,22 +1,25 @@
 #!/usr/bin/env python
 # coding: utf-8
 
+import HTMLParser
+import datetime
+import json
+import mimetypes
 import os
+import random
+import re
 import sys
+import time
+from traceback import format_exc
 import traceback
+import urllib
 import webbrowser
+import xml.dom.minidom
+
 import pyqrcode
 import requests
-import mimetypes
-import json
-import xml.dom.minidom
-import urllib
-import time
-import re
-import random
-from traceback import format_exc
 from requests.exceptions import ConnectionError, ReadTimeout
-import HTMLParser
+
 
 UNKONWN = 'unkonwn'
 SUCCESS = '200'
@@ -539,9 +542,9 @@ class WXBot:
 
         msg_content = {}
         if msg_type_id == 0:
-            return {'type': 11, 'data': {'data': ''}}
+            return {'type': 11, 'data': {'str': ''}}
         elif msg_type_id == 2:  # File Helper
-            return {'type': 0, 'data':{'data': content.replace('<br/>', '\n')}}
+            return {'type': 0, 'data':{'str': content.replace('<br/>', '\n')}}
         elif msg_type_id == 3:  # 群聊
             sp = content.find('<br/>')
             uid = content[:sp]
@@ -560,14 +563,16 @@ class WXBot:
         msg_prefix = (msg_content['user']['name'] + ':') if 'user' in msg_content else ''
 
         if mtype == 1:  #地理位置
-            if content.find('http://weixin.qq.com/cgi-bin/redirectforward?args=') != -1:
-                r = self.session.get(content)
-                r.encoding = 'gbk'
-                data = r.text
-                pos = self.search_content('title', data, 'xml')
+#             if content.find('http://weixin.qq.com/cgi-bin/redirectforward?args=') != -1:
+            if content.find('pictype=location') != -1: 
+#                 r = self.session.get(content)
+#                 r.encoding = 'gbk'
+#                 data = r.text
+#                 pos = self.search_content('title', data, 'xml')
+                pos = content[:content.find(':')]
                 msg_content['type'] = 1
-                msg_content['data'] = {'data': pos}
-                msg_content['detail'] = data
+                msg_content['data'] = {'str': pos}
+#                 msg_content['detail'] = data
                 if self.DEBUG:
                     print '    %s[Location] %s ' % (msg_prefix, pos)
             else:
@@ -575,47 +580,49 @@ class WXBot:
                 if msg_type_id == 3 or (msg_type_id == 1 and msg['ToUserName'][:2] == '@@'):  # Group text message
                     msg_infos = self.proc_at_info(content)
                     str_msg_all = msg_infos[0]
-                    str_msg = msg_infos[1]
-                    detail = msg_infos[2]
-                    msg_content['data'] = {'data': str_msg_all}
-                    msg_content['detail'] = detail
-                    msg_content['desc'] = str_msg
+                    #不再在这里进行含@的文本信息进行处理
+#                     str_msg = msg_infos[1]
+#                     detail = msg_infos[2]
+                    msg_content['data'] = {'str': str_msg_all}
+#                     msg_content['detail'] = detail
+#                     msg_content['desc'] = str_msg
                 else:
-                    msg_content['data'] = {'data' :content}
+                    msg_content['data'] = {'str' :content}
                 if self.DEBUG:
                     try:
-                        print '    %s[Text] %s' % (msg_prefix, msg_content['data'])
+                        print '    %s[Text] %s' % (msg_prefix, msg_content['data']['str'])
                     except UnicodeEncodeError:
                         print '    %s[Text] (illegal text).' % msg_prefix
         elif mtype == 3:
             msg_content['type'] = 3
-            msg_content['data'] = {'data': self.get_msg_img_url(msg_id)}
-            #太占空间，暂时注释掉
-#             msg_content['img'] = self.session.get(msg_content['data']).content.encode('hex')
+            msg_content['data'] = {'str': self.get_msg_img_url(msg_id)}
             if self.DEBUG:
                 image = self.get_msg_img(msg_id)
                 print '    %s[Image] %s' % (msg_prefix, image)
         elif mtype == 34:
             msg_content['type'] = 4
-            msg_content['data'] = {'data': self.get_voice_url(msg_id)}
-            #太占空间，暂时注释掉
-#             msg_content['voice'] = self.session.get(msg_content['data']).content.encode('hex')
+            msg_content['data'] = {'str': self.get_voice_url(msg_id)}
             if self.DEBUG:
                 voice = self.get_voice(msg_id)
                 print '    %s[Voice] %s' % (msg_prefix, voice)
         elif mtype == 37:
             msg_content['type'] = 37
-            msg_content['data'] = {'data': msg['RecommendInfo']}
+            msg_content['data'] = {'str': msg['RecommendInfo']}
             if self.DEBUG:
                 print '    %s[useradd] %s' % (msg_prefix,msg['RecommendInfo']['NickName'])
         elif mtype == 42:
             msg_content['type'] = 5
             info = msg['RecommendInfo']
-            msg_content['data'] = {'nickname': info['NickName'],
-                                   'alias': info['Alias'],
-                                   'province': info['Province'],
-                                   'city': info['City'],
-                                   'gender': ['unknown', 'male', 'female'][info['Sex']]}
+            msg_content['data'] = {'recommendinfo':
+                                    {
+                                        'nickname': info['NickName'],
+                                        'alias': info['Alias'],
+                                        'province': info['Province'],
+                                        'city': info['City'],
+                                        'gender': ['unknown', 'male', 'female'][info['Sex']]
+                                    }
+                                   }
+            '''
             if self.DEBUG:
                 print '    %s[Recommend]' % msg_prefix
                 print '    -----------------------------'
@@ -624,11 +631,12 @@ class WXBot:
                 print '    | Local: %s %s' % (info['Province'], info['City'])
                 print '    | Gender: %s' % ['unknown', 'male', 'female'][info['Sex']]
                 print '    -----------------------------'
+            '''
         elif mtype == 47:
             msg_content['type'] = 6
-            msg_content['data'] = {'data': self.search_content('cdnurl', content)}
+            msg_content['data'] = {'str': self.search_content('cdnurl', content)}
             if self.DEBUG:
-                print '    %s[Animation] %s' % (msg_prefix, msg_content['data'])
+                print '    %s[Animation] %s' % (msg_prefix, msg_content['data']['str'])
         elif mtype == 49:
             msg_content['type'] = 7
             if msg['AppMsgType'] == 3:
@@ -639,13 +647,17 @@ class WXBot:
                 app_msg_type = 'weibo'
             else:
                 app_msg_type = 'unknown'
-            msg_content['data'] = {'type': app_msg_type,
-                                   'title': msg['FileName'],
-                                   'desc': self.search_content('des', content, 'xml'),
-                                   'url': msg['Url'],
-                                   'from': self.search_content('appname', content, 'xml'),
-                                   'content': msg.get('Content')  # 有的公众号会发一次性3 4条链接一个大图,如果只url那只能获取第一条,content里面有所有的链接
+            msg_content['data'] = {'share':
+                                    {
+                                        'type': app_msg_type,
+                                        'title': msg['FileName'],
+#                                         'desc': self.search_content('des', content, 'xml'),
+                                        'url': msg['Url'],
+                                        'from': self.search_content('appname', content, 'xml'),
+#                                         'content': msg.get('Content')  # 有的公众号会发一次性3 4条链接一个大图,如果只url那只能获取第一条,content里面有所有的链接
+                                    }
                                    }
+            '''
             if self.DEBUG:
                 print '    %s[Share] %s' % (msg_prefix, app_msg_type)
                 print '    --------------------------'
@@ -655,35 +667,35 @@ class WXBot:
                 print '    | from: %s' % self.search_content('appname', content, 'xml')
                 print '    | content: %s' % (msg.get('content')[:20] if msg.get('content') else "unknown")
                 print '    --------------------------'
-
+            '''
         elif mtype == 62:
             msg_content['type'] = 8
-            msg_content['data'] = {'data': content}
+            msg_content['data'] = {'str': content}
             if self.DEBUG:
                 print '    %s[Video] Please check on mobiles' % msg_prefix
         elif mtype == 53:
             msg_content['type'] = 9
-            msg_content['data'] = {'data': content}
+            msg_content['data'] = {'str': content}
             if self.DEBUG:
                 print '    %s[Video Call]' % msg_prefix
         elif mtype == 10002:
             msg_content['type'] = 10
-            msg_content['data'] = {'data': content}
+            msg_content['data'] = {'str': content}
             if self.DEBUG:
                 print '    %s[Redraw]' % msg_prefix
         elif mtype == 10000:  # unknown, maybe red packet, or group invite
             msg_content['type'] = 12
-            msg_content['data'] = {'data': msg['Content']}
+            msg_content['data'] = {'str': msg['Content']}
             if self.DEBUG:
                 print '    [Unknown]'
         elif mtype == 43:
             msg_content['type'] = 13
-            msg_content['data'] = {'data': self.get_video_url(msg_id)}
+            msg_content['data'] = {'str': self.get_video_url(msg_id)}
             if self.DEBUG:
                 print '    %s[video] %s' % (msg_prefix, msg_content['data'])
         else:
             msg_content['type'] = 99
-            msg_content['data'] = {'data': content}
+            msg_content['data'] = {'str': content}
             if self.DEBUG:
                 print '    %s[Unknown]' % msg_prefix
         return msg_content
@@ -763,7 +775,8 @@ class WXBot:
                        'msg_id': msg['MsgId'],
                        'content': content,
                        'to_user_id': msg['ToUserName'],
-                       'user': user}
+                       'user': user,
+                       'datetime': str(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))}
             self.handle_msg_all(message)
 
     def schedule(self):
@@ -1192,7 +1205,7 @@ class WXBot:
 
     def run(self):
         '''
-        根据本函数的return的结果决定是否显式调用proc_msg()，即不在内部自动判断来确定是否调用proc_msg()
+        根据本函数的return的结果决定是否显式调用proc_msg()，即不再在内部自动判断来确定是否调用proc_msg()
         '''
         try:
             self.get_uuid()

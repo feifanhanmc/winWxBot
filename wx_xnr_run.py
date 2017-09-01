@@ -11,10 +11,29 @@ class WX_XNR_Bot(WXBot):
     '''
     def handle_msg_all(self, msg):
         if not msg['msg_type_id'] in (0, 1, 99):    #过滤掉无意义的消息
-            #目前只处理接收群消息
-            if msg['msg_type_id'] == 3:
-                print json.JSONEncoder().encode(msg)
-                WX_XNR_ES().save_data(doc_type='test_group_msg', data=msg)
+            print json.JSONEncoder().encode(msg)
+            if msg['msg_type_id'] == 3: #目前只处理接收群消息
+                groupmsg_type_id = msg['content']['type']
+                groupmsg_type = ['text', 'location', 'image', 'voice', 'recommend', 'animation','share'][[0, 1, 3, 4, 5, 6, 7].index(groupmsg_type_id)]
+                data = {}
+                if groupmsg_type_id in [0, 1, 3, 4, 6]:
+                    data['str'] = msg['content']['data']['str']
+                elif groupmsg_type_id == 5:
+                    data['recommend'] = msg['content']['data']['recommendinfo']
+                elif groupmsg_type_id == 7 :
+                    data['share'] = msg['content']['data']['share']
+                wx_xnr_groupmsg = {
+                    'datetime': msg['datetime'],
+                    'group_id': msg['user']['id'],
+                    'group_name': msg['user']['name'],
+                    'speaker_id': msg['content']['user']['id'],
+                    'speaker_name': msg['content']['user']['name'],
+                    'msg_type': groupmsg_type,
+                    'data': data
+                }
+                print wx_xnr_groupmsg
+#                 print json.JSONEncoder().encode(msg)
+#                 WX_XNR_ES().save_data(doc_type='test_group_msg', data=msg)
 #             if msg['msg_type_id'] == 4 and msg['content']['type'] == 0:
 #                 self.send_msg_by_uid(u'刘艺华是傻逼', msg['user']['id'])
 # 
@@ -77,7 +96,8 @@ def main():
     pub_msg(Bot, config)        
         
 if __name__ == '__main__':
-#     main()
+    main()
+    '''
     config = load_config()
     t = config['test_mapping']
     print type(t)
@@ -88,4 +108,4 @@ if __name__ == '__main__':
     config = load_config()
     with open('config.json', 'wb') as f:
         f.write(json.dumps(config))
-    
+    '''
