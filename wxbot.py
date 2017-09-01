@@ -72,8 +72,10 @@ class SafeSession(requests.Session):
 class WXBot:
     """WXBot功能类"""
 
-    def __init__(self, bot_id, conf_qr, DEBUG=False):
+    def __init__(self, bot_id, conf_qr, es_host, es_index_name, DEBUG=False):
         
+        self.es_host = es_host
+        self.es_index_name = es_index_name
         self.bot_id = bot_id
         #unix终端下设置conf['qr'] 为 tty
         self.conf = {'qr': conf_qr}        
@@ -649,7 +651,7 @@ class WXBot:
                 app_msg_type = 'unknown'
             msg_content['data'] = {'share':
                                     {
-                                        'type': app_msg_type,
+#                                         'type': app_msg_type,
                                         'title': msg['FileName'],
 #                                         'desc': self.search_content('des', content, 'xml'),
                                         'url': msg['Url'],
@@ -776,7 +778,7 @@ class WXBot:
                        'content': content,
                        'to_user_id': msg['ToUserName'],
                        'user': user,
-                       'datetime': str(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))}
+                       'date': str(datetime.datetime.now().strftime("%Y-%m-%d"))}
             self.handle_msg_all(message)
 
     def schedule(self):

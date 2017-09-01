@@ -1,17 +1,12 @@
 # -*- coding: utf-8 -*-
 import socket
 import json
-import ConfigParser
 
 config ={}
 
 def load_config():
-    cf = ConfigParser.ConfigParser()
-    cf.read('wx_xnr_conf.ini')
-    config = {}
-    config['socket_host'] = cf.get('wx_xnr_socket', 'host')
-    config['socket_port'] = int(cf.get('wx_xnr_socket', 'port'))
-    return config  
+    with open('wx_xnr_conf.json', 'r') as f:
+        return json.load(f)
 
 def socket_client(msg):
     try:

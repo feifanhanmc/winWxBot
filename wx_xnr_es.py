@@ -30,48 +30,12 @@ class WX_XNR_ES():
         #data(dict)
         if index_name:
             self.index_name = index_name
-        return self.es.index(index=self.index_name, doc_type=doc_type, body=json.JSONEncoder().encode(data), id=data_id)
+        return self.es.index(index=self.index_name, doc_type=doc_type, body=json.dumps(data), id=data_id)
         
     
 if __name__ == '__main__':
-    es = WX_XNR_ES()
-#     print es.create_index()
-#     test_mapping = {
-#         'properties':{
-#             'm':{
-#                 'type': 'string'
-#             },
-#             'msg_id':{
-#                 'type': 'long'
-#             }
-#         }
-#     }
-#     print es.put_mapping('test2', mapping=test_mapping)
-    data = {
-        "content": {
-            "data": {
-              "text": "\u6211\u64e6\uff0c\u741b\u54e5\u771f\u53f8\u673a"
-            },
-            "desc": "\u6211\u64e6\uff0c\u741b\u54e5\u771f\u53f8\u673a",
-            "type": 0,
-            "user": {
-              "id": "@644982a9264ad1ebeeab1d010de94ddf7622bbb77696aae818f2f585a2dc8920",
-              "name": "\u5f20\u7ff0\u5347"
-            },
-            "detail": [
-              {
-                "type": "str",
-                "value": "\u6211\u64e6\uff0c\u741b\u54e5\u771f\u53f8\u673a"
-              }
-            ]
-        },
-#         "msg_id": "763692920983062415",
-#         "msg_type_id": 3,
-#         "to_user_id": "@1f55a89113749985d3d719997b86da3bd0b8730b94c46b49cab8bdc01f00bcaf",
-#         "user": {
-#             "id": "@@9601cb3ada4dd3e393df0ad1a73e69c18dbbb01ea5133b878a3b321700464e7a",
-#             "name": "\u6253\u54cd\u6bd5\u4e1a\u6700\u540e\u4e00\u70ae"
-#         }
-    }
-    print es.save_data('aaaaa', data=data)
-    
+#     es = WX_XNR_ES()
+    with open('wx_xnr_conf.json', 'r') as f:
+        config = json.load(f)
+    wx_xnr_groupmsg = {'msg_type':'text','group_name':u'group001','speaker_name':u'\u97e9\u68a6\u6210','date':'2017-09-01','group_id':u'@@f16477692f4369fd402fe29b665a9ac482a2ca0f1f2fb3cf26daaa5e1569491f','data':{'str':u'\u6d4b\u8bd5'},'speaker_id':u'@4e6013041060394ab29bb4f04402aa854d1f11ff874c39d2a5534f9701f930c4'}    
+    WX_XNR_ES(host=config['es_host'], index_name=config['es_index_name']).save_data(doc_type='groupmsg', data=wx_xnr_groupmsg)
