@@ -53,10 +53,22 @@ def pub_msg(Bot):
         data = json.loads(data)
         if data:
             bot = Bot[data['from_bot_id']]
-#             msg = {}
-#             ES().save_data(msg=msg)
-            print data
-            print bot.send_msg(data['to_user'], data['m'])
+            group_id = bot.get_user_id(data['to_group_name'])
+            if group_id:
+                if bot.send_msg_by_uid(word=data['m'], dst=group_id):
+                    wx_xnr_groupmsg = {
+                        'date': str(datetime.datetime.now().strftime("%Y-%m-%d")),
+                        'group_id': group_id,
+                        'group_name': data['to_group_name'],
+                        'speaker_id': bot.bot_id,
+                        'speaker_name': bot.bot_id,
+                        'msg_type': 'text',
+                        'data': {
+                            'str': data['m']
+                        }
+                    }
+                    WX_XNR_ES(bot.es_host, bot.es_index_name).save_data(doc_type='groupmsg', data=wx_xnr_groupmsg)
+                    print 'Your message was sent successfully.'
     conn.close()  
     
 def main():

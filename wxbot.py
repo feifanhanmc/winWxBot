@@ -1149,6 +1149,9 @@ class WXBot:
             return None
         #也不知道原作者写这个转unicode干啥，用了就不对。不用就ok了
         #name = self.to_unicode(name)
+        
+        '''
+        #暂时只考虑群聊，所以只在群内查找username
         for contact in self.contact_list:
             if 'RemarkName' in contact and contact['RemarkName'] == name:
                 return contact['UserName']
@@ -1156,6 +1159,7 @@ class WXBot:
                 return contact['UserName']
             elif 'DisplayName' in contact and contact['DisplayName'] == name:
                 return contact['UserName']
+        '''
         for group in self.group_list:
             if 'RemarkName' in group and group['RemarkName'] == name:
                 return group['UserName']
