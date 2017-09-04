@@ -1,10 +1,14 @@
 #-*- coding: utf-8 -*-
-from wxbot import *
-from wx_xnr_es import WX_XNR_ES
 from multiprocessing import Process
 import socket
+import threading
+
+from wx_xnr_es import WX_XNR_ES
+from wxbot import *
+
 
 config = {}
+Bot = {}
 
 class WX_XNR_Bot(WXBot):
     '''
@@ -42,16 +46,12 @@ def init_es():
     es.create_index()
     es.put_mapping(doc_type='groupmsg', mapping=config['wx_xnr_groupmsg_mapping'])
 
-def pub_msg(Bot):
-    server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    server.bind((config['socket_host'], config['socket_port']))
-    server.listen(0)
+def tcplink(conn, addr):
+    print 'Accept new connection from %s:%s...'  % addr
     while True:
-        conn, addr = server.accept()
-        print 'socket connect start at %s' % str(addr)
         data = conn.recv(1024)
-        data = json.loads(data)
         if data:
+            data = json.loads(data)
             bot = Bot[data['from_bot_id']]
             group_id = bot.get_user_id(data['to_group_name'])
             if group_id:
@@ -69,13 +69,25 @@ def pub_msg(Bot):
                     }
                     WX_XNR_ES(bot.es_host, bot.es_index_name).save_data(doc_type='groupmsg', data=wx_xnr_groupmsg)
                     print 'Your message was sent successfully.'
+        else:
+            break
     conn.close()  
+    print 'Connection from %s:%s closed.' % addr
+    
+def pub_msg():
+    server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    server.bind((config['socket_host'], config['socket_port']))
+    server.listen(5)    #等待连接的最大数量为5
+    while True:
+        conn, addr = server.accept()
+        t = threading.Thread(target=tcplink, args=(conn, addr))
+        t.start()
     
 def main():
     global config
+    global Bot
     config = load_config()
     init_es()
-    Bot = {}
     #为每一个wxbot开启一个新进程
     for i in range(config['bot_num']):
         bot_id = 'bot_' + str(i+1)
@@ -87,7 +99,7 @@ def main():
             p = Process(target=WX_XNR_Bot.proc_msg, args=(bot,))
             p.start()
     #开启所有的wxbot之后，主进程监听有没有要主动发送消息的任务
-    pub_msg(Bot)     
+    pub_msg()     
         
 if __name__ == '__main__':
     main()
