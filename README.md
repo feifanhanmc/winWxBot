@@ -55,7 +55,7 @@
               }
             }
           },
-          "date": {
+          "timestamp": {
             "type": "long"
           },
           "group_id": {
