@@ -2,10 +2,9 @@
 from multiprocessing import Process
 import socket
 import threading
-
+import time
 from wx_xnr_es import WX_XNR_ES
 from wxbot import *
-
 
 config = {}
 Bot = {}
@@ -18,24 +17,34 @@ class WX_XNR_Bot(WXBot):
         if not msg['msg_type_id'] in (0, 1, 99):    #过滤掉无意义的消息
             if msg['msg_type_id'] == 3: #目前只处理接收群消息
                 groupmsg_type_id = msg['content']['type']
-                groupmsg_type = ['text', 'location', 'image', 'voice', 'recommend', 'animation','share'][[0, 1, 3, 4, 5, 6, 7].index(groupmsg_type_id)]
-                data = {}
-                if groupmsg_type_id in [0, 1, 3, 4, 6]:
-                    data['str'] = msg['content']['data']['str']
-                elif groupmsg_type_id == 5:
-                    data['recommend'] = msg['content']['data']['recommendinfo']
-                elif groupmsg_type_id == 7 :
-                    data['share'] = msg['content']['data']['share']
-                wx_xnr_groupmsg = {
-                    'date': msg['date'],
-                    'group_id': msg['user']['id'],
-                    'group_name': msg['user']['name'],
-                    'speaker_id': msg['content']['user']['id'],
-                    'speaker_name': msg['content']['user']['name'],
-                    'msg_type': groupmsg_type,
-                    'data': data
-                }
-                WX_XNR_ES(self.es_host, self.es_index_name).save_data(doc_type='groupmsg', data=wx_xnr_groupmsg)
+                if groupmsg_type_id in [0, 1, 3, 4, 5, 6, 7, 8, 20]:   #目前只处理群内部这些类型的消息
+                    groupmsg_type = ['text', 'location', 'image', 'voice', 'recommend', 'animation', 'share', 'rename'][[0, 1, 3, 4, 5, 6, 7, 20].index(groupmsg_type_id)]
+                    msgid = msg['msg_id']
+                    data = {}
+                    if groupmsg_type == 'rename' :   #更改群名称类型的消息, 由于这类消息属于系统通知类型的。所以不予存储，而是直接进行刷新等后台操作。
+                        group_name = msg['user']['name']
+                        new_group_name = msg['content']['data']['str']
+                    else:   #存储联系人发出的消息
+                        if groupmsg_type == 'image' :  #图片类型的消息要进行保存。data['str']保存的是图片的本地存储地址
+                                data['str'] = self.get_msg_img(msgid)
+                        elif groupmsg_type == 'voice' :  #语音类型的消息要进行保存。data['str']保存的是语音的本地存储地址
+                                data['str'] = self.get_voice(msgid)
+                        elif groupmsg_type == 'recommend' :    #名片类型的消息
+                            data['recommend'] = msg['content']['data']['recommendinfo']
+                        elif groupmsg_type == 'share' :    #分享类型的消息
+                            data['share'] = msg['content']['data']['share']
+                        else:
+                            data['str'] = msg['content']['data']['str']
+                        wx_xnr_groupmsg = {
+                            'timestamp': msg['timestamp'],
+                            'group_id': msg['user']['id'],
+                            'group_name': msg['user']['name'],
+                            'speaker_id': msg['content']['user']['id'],
+                            'speaker_name': msg['content']['user']['name'],
+                            'msg_type': groupmsg_type,
+                            'data': data
+                        }
+                        WX_XNR_ES(self.es_host, self.es_index_name).save_data(doc_type='groupmsg', data=wx_xnr_groupmsg)
 
 def load_config():
     with open('wx_xnr_conf.json', 'r') as f:
@@ -57,7 +66,7 @@ def tcplink(conn, addr):
             if group_id:
                 if bot.send_msg_by_uid(word=data['m'], dst=group_id):
                     wx_xnr_groupmsg = {
-                        'date': str(datetime.datetime.now().strftime("%Y-%m-%d")),
+                        'timestamp': int(time.time()),
                         'group_id': group_id,
                         'group_name': data['to_group_name'],
                         'speaker_id': bot.bot_id,
@@ -103,3 +112,15 @@ def main():
         
 if __name__ == '__main__':
     main()
+
+
+
+
+
+
+
+
+
+
+
+
