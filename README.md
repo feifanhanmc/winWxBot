@@ -55,9 +55,8 @@
               }
             }
           },
-          "date": {
-            "type": "string",
-            "index": "not_analyzed"
+          "timestamp": {
+            "type": "long"
           },
           "group_id": {
             "type": "string",
